@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ordering Website</title>
+  </head>
+  <body>
+    <script>
+
+      alert("Hello!");
+
+      let name = prompt("What is your name?", "Aashil");
+      let item = prompt("What item do you need?");
+      let amount = parseInt(prompt("How many items do you need?"));
+
+      while (isNaN(amount) || amount < 1 ||  amount > 99) {
+        amount = parseInt(prompt("How many items do you need?"));
+      }
+
+      let todayDate = new Date();
+      let hour = todayDate.getHours();
+
+      if (hour < 12) {
+        document.write("<h1> Good Morning ");
+      } else if (hour < 18) {
+        document.write("<h1> Good Afternoon ");
+      } else {
+        document.write("<h1> Good Evening ");
+      }
+
+      document.writeln(name + ", how are you doing? <br> Welcome to our store! <br> Todays date is: " + todayDate.toDateString());
+
+      let arrival = new Date(todayDate);
+      arrival.setDate(todayDate.getDate() + 7);
+      let arrival_date = arrival.toDateString();
+      //console.log(arrival)
+      document.write("<h2> Thanks for ordering " + amount + " " + item + "s. Your order will arrive on " + arrival_date + ".</h2>");
+
+    </script>
+  </body>
+</html>
