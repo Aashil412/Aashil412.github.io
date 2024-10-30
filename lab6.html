@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 6</title>
+</head>
+<body>
+    <h1>Cat Facts</h1>
+    <button id="fetchButton">Get Cat Facts</button>
+    
+    <table id="factsTable" border="1">
+        <thead>
+            <tr>
+                <th>Fact Number</th>
+                <th>Fact</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+
+    <img id="catImage" src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTenp49lG3DDWsWxhb2eiwRcDXva9Cs1aG7hA&s" alt="Cat Image">
+
+    <script>
+        async function fetchCatFacts() {
+            const url = 'https://brianobruno.github.io/cats.json';
+            const options = { method: 'GET' };
+
+            const response = await fetch(url, options);
+            const result = await response.text();
+            const data = JSON.parse(result);
+            
+            data.facts.sort((a, b) => a.factId - b.factId);
+
+            const tableBody = document.getElementById('factsTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; 
+           
+            for (let i = 0; i < data.facts.length; i++) {
+                const fact = data.facts[i];
+                const row = tableBody.insertRow();
+
+                const factIdCell = row.insertCell(0);
+                const factTextCell = row.insertCell(1);
+
+                factIdCell.textContent = fact.factId;
+                factTextCell.textContent = fact.text;
+            }
+
+
+            document.getElementById('catImage').src = data.catPhoto;
+        }
+
+        document.getElementById('fetchButton').addEventListener('click', fetchCatFacts);
+    </script>
+</body>
+</html>
