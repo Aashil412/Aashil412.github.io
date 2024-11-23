@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dog Breeds</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-4">
+    <h1 class="mb-0">Dog Breeds</h1>
+    <p>Select a breed to view its random image!</p>
+  </header>
+
+  <div class="container text-center mt-5">
+    <div class="mb-3">
+      <select id="breedSelect" class="form-select" onchange="fetchBreedImage()">
+        <option value="" selected>Select a Breed</option>
+      </select>
+    </div>
+
+    <div id="imageContainer" class="d-none">
+      <img id="breedImage" class="img-fluid mb-3 mx-auto d-block" style="max-height: 400px;" alt="Dog Breed">
+      <h5 id="breedName" class="text-muted mb-3"></h5>
+      <div class="d-flex justify-content-center gap-2">
+        <button class="btn btn-success" onclick="fetchBreedImage()">Next Image</button>
+        <button class="btn btn-warning" onclick="addToFavorites()">Favorite</button>
+        <a href="Favorites.html" class="btn btn-secondary">View Favorites</a>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <a href="HomePage.html" class="btn btn-info">Back to Gallery</a>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedBreed = urlParams.get("breed");
+
+    async function fetchBreeds() {
+      const breedSelect = document.getElementById("breedSelect");
+      const url = "https://dog.ceo/api/breeds/list/all";
+      const options = { method: "GET" };
+
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+
+        for (const breed in data.message) {
+          if (data.message[breed].length === 0) {
+            const option = document.createElement("option");
+            option.value = breed;
+            option.textContent = capitalizeFirstLetter(breed);
+            breedSelect.appendChild(option);
+          } else {
+            for (const subBreed of data.message[breed]) {
+              const option = document.createElement("option");
+              option.value = `${breed}-${subBreed}`;
+              option.textContent = `${capitalizeFirstLetter(subBreed)} ${capitalizeFirstLetter(breed)}`;
+              breedSelect.appendChild(option);
+            }
+          }
+        }
+
+        if (selectedBreed) {
+          breedSelect.value = selectedBreed;
+          fetchBreedImage();
+        }
+      } catch (error) {
+        console.error("Error fetching breeds:", error);
+        alert("Failed to load breed list. Please try again later.");
+      }
+    }
+
+    async function fetchBreedImage() {
+      const breed = document.getElementById("breedSelect").value;
+      const breedImage = document.getElementById("breedImage");
+      const breedName = document.getElementById("breedName");
+      const imageContainer = document.getElementById("imageContainer");
+
+      if (!breed) {
+        imageContainer.classList.add("d-none");
+        return;
+      }
+
+      const breedParts = breed.split("-");
+      const breedPath = breedParts.length === 2 ? `${breedParts[0]}/${breedParts[1]}` : breedParts[0];
+      const url = `https://dog.ceo/api/breed/${breedPath}/images/random`;
+      const options = { method: "GET" };
+
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+
+        breedImage.src = data.message;
+        breedImage.alt = `Image of ${breed}`;
+        breedName.textContent = `Breed: ${capitalizeFirstLetter(breedParts[1] || "")} ${capitalizeFirstLetter(breedParts[0])}`;
+        imageContainer.classList.remove("d-none");
+      } catch (error) {
+        console.error("Error fetching breed image:", error);
+        alert("Failed to load breed image. Please try again later.");
+      }
+    }
+
+    function addToFavorites() {
+      const breedImage = document.getElementById("breedImage").src;
+
+      if (!breedImage) {
+        alert("No image available to favorite!");
+        return;
+      }
+
+      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      if (!favorites.includes(breedImage)) {
+        favorites.push(breedImage);
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+        alert("Added to favorites!");
+      } else {
+        alert("Already in favorites!");
+      }
+    }
+
+    function capitalizeFirstLetter(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    fetchBreeds();
+  </script>
+</body>
+</html>
