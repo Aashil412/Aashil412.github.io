@@ -13,6 +13,12 @@
   </header>
 
   <div class="container my-5">
+    <div class="mb-3 text-center">
+      <button class="btn btn-success" onclick="sortFavoritesAlphabetically()">Sort by Alphabetical Order</button>
+      <button class="btn btn-info" onclick="sortFavoritesByImageCount()">Sort by Number of Images</button>
+      <button class="btn btn-danger" onclick="clearAllFavorites()">Clear All Favorites</button>
+    </div>
+
     <div id="favoritesGallery"></div>
 
     <div class="text-center mt-4">
@@ -22,48 +28,70 @@
 
   <script>
     function loadFavorites() {
-      var favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-      var groupedFavorites = groupFavoritesByBreed(favorites);
+      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      const groupedFavorites = groupFavoritesByBreed(favorites);
 
-      var gallery = document.getElementById("favoritesGallery");
+      const gallery = document.getElementById("favoritesGallery");
       gallery.innerHTML = "";
 
-      var hasBreeds = false;
-      for (var breed in groupedFavorites) {
+      let hasBreeds = false;
+      for (const breed in groupedFavorites) {
         hasBreeds = true;
         break;
       }
 
       if (!hasBreeds) {
-        var noFavoritesMessage = document.createElement("div");
+        const noFavoritesMessage = document.createElement("div");
         noFavoritesMessage.className = "text-center";
         noFavoritesMessage.innerHTML = "<p>No favorites added yet!</p>";
         gallery.appendChild(noFavoritesMessage);
         return;
       }
 
-      var sortedBreeds = [];
-      for (var breed in groupedFavorites) {
+      renderFavorites(groupedFavorites);
+    }
+
+    function groupFavoritesByBreed(favorites) {
+      const grouped = {};
+      for (let i = 0; i < favorites.length; i++) {
+        const imageUrl = favorites[i];
+        const breed = extractBreedFromUrl(imageUrl);
+
+        if (!grouped[breed]) {
+          grouped[breed] = [];
+        }
+        grouped[breed].push(imageUrl);
+      }
+
+      return grouped;
+    }
+
+    function renderFavorites(groupedFavorites) {
+      const gallery = document.getElementById("favoritesGallery");
+      gallery.innerHTML = "";
+
+      const sortedBreeds = [];
+      for (const breed in groupedFavorites) {
         sortedBreeds.push(breed);
       }
       sortedBreeds.sort();
 
-      for (var i = 0; i < sortedBreeds.length; i++) {
-        var breed = sortedBreeds[i];
-        var breedGroup = document.createElement("div");
+      for (let i = 0; i < sortedBreeds.length; i++) {
+        const breed = sortedBreeds[i];
+        const breedGroup = document.createElement("div");
         breedGroup.className = "mb-5";
 
-        var breedTitle = document.createElement("h3");
+        const breedTitle = document.createElement("h3");
         breedTitle.className = "text-center text-muted mb-3";
-        breedTitle.textContent = capitalizeFirstLetter(breed);
+        breedTitle.textContent = `${capitalizeFirstLetter(breed)} (${groupedFavorites[breed].length} images)`;
         breedGroup.appendChild(breedTitle);
 
-        var row = document.createElement("div");
+        const row = document.createElement("div");
         row.className = "row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4";
 
-        for (var j = 0; j < groupedFavorites[breed].length; j++) {
-          var imageUrl = groupedFavorites[breed][j];
-          var col = document.createElement("div");
+        for (let j = 0; j < groupedFavorites[breed].length; j++) {
+          const imageUrl = groupedFavorites[breed][j];
+          const col = document.createElement("div");
           col.className = "col";
 
           col.innerHTML = `
@@ -87,31 +115,19 @@
       }
     }
 
-    function groupFavoritesByBreed(favorites) {
-      var grouped = {};
-      for (var i = 0; i < favorites.length; i++) {
-        var imageUrl = favorites[i];
-        var breed = extractBreedFromUrl(imageUrl);
-
-        if (!grouped[breed]) {
-          grouped[breed] = [];
-        }
-        grouped[breed].push(imageUrl);
-      }
-      return grouped;
-    }
-
     function extractBreedFromUrl(url) {
-      var parts = url.split("/");
-      return parts.length === 3
-        ? capitalizeFirstLetter(parts[parts.length - 1]) + " " + capitalizeFirstLetter(parts[parts.length - 2])
-        : capitalizeFirstLetter(parts[parts.length - 2]);
+      const parts = url.split("/");
+      if (parts.length === 3) {
+        return capitalizeFirstLetter(parts[parts.length - 1]) + " " + capitalizeFirstLetter(parts[parts.length - 2]);
+      } else {
+        return capitalizeFirstLetter(parts[parts.length - 2]);
+      }
     }
 
     function removeFromFavorites(imageUrl) {
-      var favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-      var updatedFavorites = [];
-      for (var i = 0; i < favorites.length; i++) {
+      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      const updatedFavorites = [];
+      for (let i = 0; i < favorites.length; i++) {
         if (favorites[i] !== imageUrl) {
           updatedFavorites.push(favorites[i]);
         }
@@ -119,6 +135,113 @@
       localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
       loadFavorites();
     }
+
+    function clearAllFavorites() {
+      const userInput = prompt("Type 'CLEAR' to confirm clearing all favorites:");
+      if (userInput === "CLEAR") {
+        localStorage.removeItem("favorites");
+        loadFavorites();
+      }
+    }
+
+    function sortFavoritesAlphabetically() {
+      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      const groupedFavorites = groupFavoritesByBreed(favorites);
+
+      const sorted = {};
+      const breedList = [];
+      for (const breed in groupedFavorites) {
+        breedList.push(breed);
+      }
+      breedList.sort();
+
+      for (let i = 0; i < breedList.length; i++) {
+        const key = breedList[i];
+        sorted[key] = groupedFavorites[key];
+      }
+
+      renderFavorites(sorted);
+    }
+
+    function sortFavoritesByImageCount() {
+  const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+  const groupedFavorites = groupFavoritesByBreed(favorites);
+
+  console.log("Grouped Favorites Before Sorting:", groupedFavorites);
+
+  const entries = [];
+  for (const breed in groupedFavorites) {
+    const images = groupedFavorites[breed];
+    entries.push([breed, images]);
+  }
+
+  console.log("Entries Before Sorting:", entries);
+
+  entries.sort(function (a, b) {
+    const countA = a[1].length;
+    const countB = b[1].length;
+    console.log(`Comparing ${a[0]} (${countA}) with ${b[0]} (${countB})`);
+    if (countA === countB) {
+      return a[0].localeCompare(b[0]);
+    }
+    return countB - countA; 
+  });
+
+  console.log("Entries After Sorting:", entries);
+
+  renderFavoritesFromEntries(entries);
+}
+
+function renderFavoritesFromEntries(entries) {
+  const gallery = document.getElementById("favoritesGallery");
+  gallery.innerHTML = "";
+
+  for (let i = 0; i < entries.length; i++) {
+    const breed = entries[i][0];
+    const images = entries[i][1];
+
+    const breedGroup = document.createElement("div");
+    breedGroup.className = "mb-5";
+
+    const breedTitle = document.createElement("h3");
+    breedTitle.className = "text-center text-muted mb-3";
+    breedTitle.textContent = `${capitalizeFirstLetter(breed)} (${images.length} images)`;
+    breedGroup.appendChild(breedTitle);
+
+    const row = document.createElement("div");
+    row.className = "row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4";
+
+    for (let j = 0; j < images.length; j++) {
+      const imageUrl = images[j];
+      const col = document.createElement("div");
+      col.className = "col";
+
+      col.innerHTML = `
+        <div class="card h-100 d-flex flex-column">
+          <div class="ratio ratio-1x1">
+            <img src="${imageUrl}" class="card-img-top img-fluid" alt="${breed}" style="object-fit: contain;">
+          </div>
+          <div class="card-body text-center">
+            <div class="d-flex justify-content-center gap-2">
+              <a href="BreedPage.html?breed=${breed.replace(" ", "-").toLowerCase()}" class="btn btn-info btn-sm">View Dog Breed</a>
+              <button class="btn btn-danger btn-sm" onclick="removeFromFavorites('${imageUrl}')">Remove</button>
+            </div>
+          </div>
+        </div>
+      `;
+      row.appendChild(col);
+    }
+
+    breedGroup.appendChild(row);
+    gallery.appendChild(breedGroup);
+  }
+}
+
+
+
+
+
+
 
     function capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);

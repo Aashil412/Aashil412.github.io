@@ -18,10 +18,31 @@
         <button onclick="fetchUniqueDog()" class="btn btn-secondary">Fetch Unique Dog</button>
       </div>
       <div class="col-auto">
-        <button onclick="sortDogs()" class="btn btn-success">Sort Dogs</button>
+        <button onclick="sortDogsAlphabetically()" class="btn btn-success">Sort Alphabetically</button>
+      </div>
+      <div class="col-auto">
+        <button onclick="filterDogsWithSubBreeds()" class="btn btn-info">Show Breeds with Sub-Breeds</button>
       </div>
       <div class="col-auto">
         <a href="Favorites.html" class="btn btn-warning">View Favorites</a>
+      </div>
+      <div class="col-auto">
+        <button onclick="clearGallery()" class="btn btn-danger">Clear Gallery</button>
+      </div>
+    </div>
+
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-6">
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control"
+          placeholder="Search for a breed..."
+          oninput="searchBreeds()"
+        />
+      </div>
+      <div class="col-auto">
+        <button onclick="clearSearch()" class="btn btn-outline-danger">Clear Search</button>
       </div>
     </div>
 
@@ -29,15 +50,34 @@
   </div>
 
   <footer class="bg-light text-center py-3">
-    <p class="mt-3 mb-0 text-secondary">© 2024 Dog Gallery</p>
+    <p class="mt-3 mb-0 text-secondary">2024 Dog Gallery</p>
   </footer>
 
   <script>
     const displayedDogs = [];
+    let allBreeds = {};
+    let filteredBreeds = [];
+    let searchQuery = localStorage.getItem("searchQuery") || "";
+
+    document.getElementById("searchInput").value = searchQuery;
 
     function loadInitialDogs() {
+      fetchBreeds();
       for (let i = 0; i < 12; i++) {
         fetchRandomDogImage();
+      }
+    }
+
+    async function fetchBreeds() {
+      const url = "https://dog.ceo/api/breeds/list/all";
+      const options = { method: "GET" };
+
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        allBreeds = data.message;
+      } catch (error) {
+        console.error("Error fetching breeds:", error);
       }
     }
 
@@ -46,31 +86,34 @@
       const options = { method: "GET" };
 
       fetch(url, options)
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           if (!displayedDogs.includes(data.message)) {
             displayedDogs.push(data.message);
             addDogToGallery(data.message);
           }
         })
-        .catch(error => console.error("Error fetching dog image:", error));
+        .catch((error) => console.error("Error fetching dog image:", error));
     }
 
-    function addDogToGallery(imageUrl) {
+    function addDogToGallery(imageUrl, breedName = null) {
       const gallery = document.getElementById("dogGallery");
       const col = document.createElement("div");
       col.className = "col";
 
-      const breedName = extractBreedFromUrl(imageUrl);
+      if (!breedName) {
+        breedName = extractBreedFromUrl(imageUrl);
+      }
+
       col.innerHTML = `
         <div class="card h-100 d-flex flex-column">
           <div class="ratio ratio-1x1">
-            <img src="${imageUrl}" class="card-img-top img-fluid" alt="Dog Image" style="object-fit: contain;">
+            <img src="${imageUrl}" class="card-img-top img-fluid" alt="${breedName}" style="object-fit: contain;">
           </div>
           <div class="card-body text-center d-flex flex-column justify-content-between">
             <h5 class="card-title">${capitalizeFirstLetter(breedName)}</h5>
             <div class="d-flex justify-content-center gap-2">
-              <a href="BreedPage.html?breed=${breedName.replace(" ", "-")}" class="btn btn-info btn-sm">View Dog Breed</a>
+              <a href="BreedPage.html?breed=${breedName.replace(" ", "-").toLowerCase()}" class="btn btn-info btn-sm">View Dog Breed</a>
               <button class="btn btn-warning btn-sm" onclick="addToFavorites('${imageUrl}')">Favorite</button>
             </div>
           </div>
@@ -93,9 +136,9 @@
       if (!favorites.includes(imageUrl)) {
         favorites.push(imageUrl);
         localStorage.setItem("favorites", JSON.stringify(favorites));
-        alert("Added to favorites!");
+        showAlert("Dog added to favorites!", "success");
       } else {
-        alert("Already in favorites!");
+        showAlert("Dog is already in favorites.", "warning");
       }
     }
 
@@ -103,11 +146,105 @@
       fetchRandomDogImage();
     }
 
-    function sortDogs() {
+    function sortDogsAlphabetically() {
       displayedDogs.sort();
+      renderGallery();
+    }
+
+    async function filterDogsWithSubBreeds() {
       const gallery = document.getElementById("dogGallery");
       gallery.innerHTML = "";
-      displayedDogs.forEach(imageUrl => addDogToGallery(imageUrl));
+
+      for (const breed in allBreeds) {
+        if (allBreeds[breed].length > 0) {
+          for (let i = 0; i < allBreeds[breed].length; i++) {
+            const subBreed = allBreeds[breed][i];
+            const breedPath = `${breed}/${subBreed}`;
+            const url = `https://dog.ceo/api/breed/${breedPath}/images/random`;
+
+            try {
+              const response = await fetch(url);
+              const data = await response.json();
+
+          
+              const masterSubFormat = `${breed}-${subBreed}`;
+              const formattedBreedName = capitalizeFirstLetter(breed) + " " + capitalizeFirstLetter(subBreed);
+
+              addDogToGallery(data.message, masterSubFormat); 
+            } catch (error) {
+              console.error(`Error fetching image for ${breedPath}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+
+    function searchBreeds() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const gallery = document.getElementById("dogGallery");
+      gallery.innerHTML = "";
+
+      if (!query) {
+        renderGallery(); 
+        return;
+      }
+
+      let found = false;
+
+      for (const breed in allBreeds) {
+        if (breed.toLowerCase().includes(query)) {
+          found = true;
+          let breedPath;
+          if (allBreeds[breed].length > 0) {
+        breedPath = `${breed}/${allBreeds[breed][0]}`;
+      } else {
+        breedPath = breed;
+      }
+          const url = `https://dog.ceo/api/breed/${breedPath}/images/random`;
+          const options = { method: "GET" };
+
+          fetch(url, options)
+            .then((response) => response.json())
+            .then((data) => {
+              addDogToGallery(data.message, capitalizeFirstLetter(breed));
+            })
+            .catch((error) => console.error(`Error fetching image for ${breedPath}:`, error));
+        }
+      }
+
+      if (!found) {
+        showAlert("No matching breeds found!", "danger");
+      }
+    }
+
+
+    function clearGallery() {
+      const gallery = document.getElementById("dogGallery");
+      gallery.innerHTML = "";
+      displayedDogs.length = 0;
+    }
+
+    function clearSearch() {
+      document.getElementById("searchInput").value = "";
+      localStorage.removeItem("searchQuery");
+      renderGallery();
+    }
+
+    function renderGallery() {
+      const gallery = document.getElementById("dogGallery");
+      gallery.innerHTML = "";
+      displayedDogs.forEach((imageUrl) => addDogToGallery(imageUrl));
+    }
+
+    function showAlert(message, type) {
+      const alertDiv = document.createElement("div");
+      alertDiv.className = `alert alert-${type} fixed-top m-3 text-center`;
+      alertDiv.role = "alert";
+      alertDiv.textContent = message;
+
+      document.body.appendChild(alertDiv);
+
     }
 
     loadInitialDogs();

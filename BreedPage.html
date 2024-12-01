@@ -9,7 +9,7 @@
 <body>
   <header class="bg-primary text-white text-center py-4">
     <h1 class="mb-0">Dog Breeds</h1>
-    <p>Select a breed to view its random image!</p>
+    <p>Select a breed to view its random images!</p>
   </header>
 
   <div class="container text-center mt-5">
@@ -73,34 +73,34 @@
       }
     }
 
-    async function fetchBreedImage() {
-      const breed = document.getElementById("breedSelect").value;
-      const breedImage = document.getElementById("breedImage");
-      const breedName = document.getElementById("breedName");
-      const imageContainer = document.getElementById("imageContainer");
+    function fetchBreedImage() {
+      if (!selectedBreed) return;
 
-      if (!breed) {
-        imageContainer.classList.add("d-none");
-        return;
+      const breedParts = selectedBreed.split("-");
+      let breedPath;
+      if (breedParts.length === 2) {
+        breedPath = `${breedParts[0]}/${breedParts[1]}`;
+      } else {
+        breedPath = breedParts[0];
       }
 
-      const breedParts = breed.split("-");
-      const breedPath = breedParts.length === 2 ? `${breedParts[0]}/${breedParts[1]}` : breedParts[0];
       const url = `https://dog.ceo/api/breed/${breedPath}/images/random`;
-      const options = { method: "GET" };
 
-      try {
-        const response = await fetch(url, options);
-        const data = await response.json();
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          const imageContainer = document.getElementById("imageContainer");
+          const breedImage = document.getElementById("breedImage");
+          const breedName = document.getElementById("breedName");
 
-        breedImage.src = data.message;
-        breedImage.alt = `Image of ${breed}`;
-        breedName.textContent = `Breed: ${capitalizeFirstLetter(breedParts[1] || "")} ${capitalizeFirstLetter(breedParts[0])}`;
-        imageContainer.classList.remove("d-none");
-      } catch (error) {
-        console.error("Error fetching breed image:", error);
-        alert("Failed to load breed image. Please try again later.");
-      }
+          breedImage.src = data.message;
+          breedName.textContent = `Breed: ${capitalizeFirstLetter(breedParts[1] || "")} ${capitalizeFirstLetter(breedParts[0])}`;
+          imageContainer.classList.remove("d-none");
+        })
+        .catch((error) => {
+          console.error("Error fetching breed image:", error);
+          alert("Failed to load breed image.");
+        });
     }
 
     function addToFavorites() {
