@@ -164,84 +164,70 @@
     }
 
     function sortFavoritesByImageCount() {
-  const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-  const groupedFavorites = groupFavoritesByBreed(favorites);
+      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      const groupedFavorites = groupFavoritesByBreed(favorites);
 
-  console.log("Grouped Favorites Before Sorting:", groupedFavorites);
+      const entries = [];
+      for (const breed in groupedFavorites) {
+        const images = groupedFavorites[breed];
+        entries.push([breed, images]);
+      }
+      entries.sort(function (a, b) {
+        const countA = a[1].length;
+        const countB = b[1].length;
+        if (countA === countB) {
+          return a[0].localeCompare(b[0]);
+        }
+        return countB - countA; 
+      });
 
-  const entries = [];
-  for (const breed in groupedFavorites) {
-    const images = groupedFavorites[breed];
-    entries.push([breed, images]);
-  }
-
-  console.log("Entries Before Sorting:", entries);
-
-  entries.sort(function (a, b) {
-    const countA = a[1].length;
-    const countB = b[1].length;
-    console.log(`Comparing ${a[0]} (${countA}) with ${b[0]} (${countB})`);
-    if (countA === countB) {
-      return a[0].localeCompare(b[0]);
+      renderFavoritesFromEntries(entries);
     }
-    return countB - countA; 
-  });
 
-  console.log("Entries After Sorting:", entries);
+    function renderFavoritesFromEntries(entries) {
+      const gallery = document.getElementById("favoritesGallery");
+      gallery.innerHTML = "";
 
-  renderFavoritesFromEntries(entries);
-}
+      for (let i = 0; i < entries.length; i++) {
+        const breed = entries[i][0];
+        const images = entries[i][1];
 
-function renderFavoritesFromEntries(entries) {
-  const gallery = document.getElementById("favoritesGallery");
-  gallery.innerHTML = "";
+        const breedGroup = document.createElement("div");
+        breedGroup.className = "mb-5";
 
-  for (let i = 0; i < entries.length; i++) {
-    const breed = entries[i][0];
-    const images = entries[i][1];
+        const breedTitle = document.createElement("h3");
+        breedTitle.className = "text-center text-muted mb-3";
+        breedTitle.textContent = `${capitalizeFirstLetter(breed)} (${images.length} images)`;
+        breedGroup.appendChild(breedTitle);
 
-    const breedGroup = document.createElement("div");
-    breedGroup.className = "mb-5";
+        const row = document.createElement("div");
+        row.className = "row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4";
 
-    const breedTitle = document.createElement("h3");
-    breedTitle.className = "text-center text-muted mb-3";
-    breedTitle.textContent = `${capitalizeFirstLetter(breed)} (${images.length} images)`;
-    breedGroup.appendChild(breedTitle);
+        for (let j = 0; j < images.length; j++) {
+          const imageUrl = images[j];
+          const col = document.createElement("div");
+          col.className = "col";
 
-    const row = document.createElement("div");
-    row.className = "row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4";
-
-    for (let j = 0; j < images.length; j++) {
-      const imageUrl = images[j];
-      const col = document.createElement("div");
-      col.className = "col";
-
-      col.innerHTML = `
-        <div class="card h-100 d-flex flex-column">
-          <div class="ratio ratio-1x1">
-            <img src="${imageUrl}" class="card-img-top img-fluid" alt="${breed}" style="object-fit: contain;">
-          </div>
-          <div class="card-body text-center">
-            <div class="d-flex justify-content-center gap-2">
-              <a href="BreedPage.html?breed=${breed.replace(" ", "-").toLowerCase()}" class="btn btn-info btn-sm">View Dog Breed</a>
-              <button class="btn btn-danger btn-sm" onclick="removeFromFavorites('${imageUrl}')">Remove</button>
+          col.innerHTML = `
+            <div class="card h-100 d-flex flex-column">
+              <div class="ratio ratio-1x1">
+                <img src="${imageUrl}" class="card-img-top img-fluid" alt="${breed}" style="object-fit: contain;">
+              </div>
+              <div class="card-body text-center">
+                <div class="d-flex justify-content-center gap-2">
+                  <a href="BreedPage.html?breed=${breed.replace(" ", "-").toLowerCase()}" class="btn btn-info btn-sm">View Dog Breed</a>
+                  <button class="btn btn-danger btn-sm" onclick="removeFromFavorites('${imageUrl}')">Remove</button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      `;
-      row.appendChild(col);
+          `;
+          row.appendChild(col);
+        }
+
+        breedGroup.appendChild(row);
+        gallery.appendChild(breedGroup);
+      }
     }
-
-    breedGroup.appendChild(row);
-    gallery.appendChild(breedGroup);
-  }
-}
-
-
-
-
-
-
 
     function capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
